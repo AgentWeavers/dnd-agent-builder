@@ -7,4 +7,5 @@ requires-python = ">=3.13"
 dependencies = [
     "galileo>=1.7.0",
     "openai-agents>=0.1.0",
+    "tavily-python>=0.7.9",
 ]

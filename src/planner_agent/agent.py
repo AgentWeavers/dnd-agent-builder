@@ -1,6 +1,7 @@
 import os
 from agents import Agent, set_default_openai_api, function_tool
 from planner_agent.subagents.intent_analyzer import intent_analyzer_agent
+from planner_agent.subagents.knowledge_retrieval import knowledge_retrieval_agent
 
 from dotenv import load_dotenv
 
@@ -94,8 +95,15 @@ planner_supervisor_agent = Agent(
   name="Planner Supervisor",
   instructions=get_prompt(),
   model="gpt-4.1-nano",
-  tools=[think, intent_analyzer_agent.as_tool(
-    tool_name="intent_analyzer",
-    tool_description="Requirements Analysis Agent, responsible for defining clear, specific purposes and performing comprehensive analysis for AI agents."
-  )],  
+  tools=[
+    think, 
+    intent_analyzer_agent.as_tool(
+      tool_name="intent_analyzer",
+      tool_description="Requirements Analysis Agent, responsible for defining clear, specific purposes and performing comprehensive analysis for AI agents."
+    ),
+    knowledge_retrieval_agent.as_tool(
+      tool_name="knowledge_retrieval",
+      tool_description="Knowledge Retrieval Agent, responsible for searching the web for information related to the given query."
+    )
+  ],  
 )
