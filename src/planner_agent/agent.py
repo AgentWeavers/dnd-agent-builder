@@ -107,7 +107,7 @@ planner_supervisor_agent = Agent(
       tool_description="Knowledge Retrieval Agent, responsible for searching the web for information related to the given query."
     ),
     workflow_designer_agent.as_tool(
-      tool_name="agent_tool_workflow_designer",
+      tool_name="architecture_tool_workflow_designer",
       tool_description="The Agent Tool Workflow Designer plans agent architectures, specifies tools, and designs workflows to ensure robust, scalable, and effective AI agent solutions."
     )
   ],  
