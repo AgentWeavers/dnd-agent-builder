@@ -2,6 +2,7 @@ import os
 from agents import Agent, set_default_openai_api, function_tool
 from planner_agent.subagents.intent_analyzer import intent_analyzer_agent
 from planner_agent.subagents.knowledge_retrieval import knowledge_retrieval_agent
+from planner_agent.subagents.workflow_designer import workflow_designer_agent
 
 from dotenv import load_dotenv
 
@@ -104,6 +105,10 @@ planner_supervisor_agent = Agent(
     knowledge_retrieval_agent.as_tool(
       tool_name="knowledge_retrieval",
       tool_description="Knowledge Retrieval Agent, responsible for searching the web for information related to the given query."
+    ),
+    workflow_designer_agent.as_tool(
+      tool_name="agent_tool_workflow_designer",
+      tool_description="The Agent Tool Workflow Designer plans agent architectures, specifies tools, and designs workflows to ensure robust, scalable, and effective AI agent solutions."
     )
   ],  
 )
