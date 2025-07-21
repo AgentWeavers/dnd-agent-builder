@@ -1,11 +1,10 @@
 import os
-from agents import Agent, set_default_openai_api, function_tool
+from agents import Agent, function_tool
 from tavily import AsyncTavilyClient
 from dotenv import load_dotenv
-from prompt import knowledge_retrieval_agent_prompt
-load_dotenv()
+from planner_agent.subagents.prompt import knowledge_retrieval_agent_prompt
 
-set_default_openai_api(os.getenv("OPENAI_API_KEY"))
+load_dotenv()
 
 @function_tool
 async def web_search(query: str) -> dict:

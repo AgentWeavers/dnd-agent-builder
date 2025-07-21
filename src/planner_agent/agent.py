@@ -1,14 +1,8 @@
-import os
-from agents import Agent, set_default_openai_api, function_tool
-from planner_agent.subagents.intent_analyzer import intent_analyzer_agent
-from planner_agent.subagents.knowledge_retrieval import knowledge_retrieval_agent
-from planner_agent.subagents.workflow_designer import workflow_designer_agent
+from agents import Agent, function_tool
+from src.planner_agent.subagents.intent_analyzer import intent_analyzer_agent
+from src.planner_agent.subagents.knowledge_retrieval import knowledge_retrieval_agent
+from src.planner_agent.subagents.workflow_designer.agent import workflow_designer_agent
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-set_default_openai_api(os.getenv("OPENAI_API_KEY"))
 
 @function_tool
 def think(thought: str) -> str:

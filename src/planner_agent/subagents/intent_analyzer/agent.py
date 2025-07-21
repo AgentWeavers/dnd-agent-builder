@@ -1,13 +1,7 @@
-import os
 from typing import List
-from agents import Agent, set_default_openai_api
+from agents import Agent
 from pydantic import BaseModel, Field
-from dotenv import load_dotenv
-from prompt import intent_analyzer_agent_prompt_final
-
-load_dotenv()
-
-set_default_openai_api(os.getenv("OPENAI_API_KEY"))
+from planner_agent.subagents.prompt import intent_analyzer_agent_prompt_final
 
 class IntentClassification(BaseModel):
     intent: str

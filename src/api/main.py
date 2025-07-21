@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting AgentWeaver application...")
     
     # Load environment variables
-    load_dotenv()
+    load_dotenv(override=True)
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         logger.error("OPENAI_API_KEY not set; please define it in your .env file")
