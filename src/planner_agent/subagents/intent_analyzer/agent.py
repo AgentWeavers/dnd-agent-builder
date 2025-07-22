@@ -1,7 +1,7 @@
 from typing import List
 from agents import Agent
 from pydantic import BaseModel, Field
-from planner_agent.subagents.prompt import intent_analyzer_agent_prompt_final
+from planner_agent.subagents.intent_analyzer.intent_prompt import intent_analyzer_agent_prompt_final_v1
 
 class IntentClassification(BaseModel):
     intent: str
@@ -46,6 +46,6 @@ class IntentOutput(BaseModel):
 intent_analyzer_agent = Agent(
   name="Intent Analyzer",
   model="gpt-4.1-mini",
-  instructions=intent_analyzer_agent_prompt_final,
+  instructions=intent_analyzer_agent_prompt_final_v1,
   output_type=IntentOutput
 )
