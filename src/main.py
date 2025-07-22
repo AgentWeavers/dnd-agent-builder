@@ -1,4 +1,3 @@
-import os
 import asyncio
 from agents import run_demo_loop, set_trace_processors
 from planner_agent import planner_supervisor_agent

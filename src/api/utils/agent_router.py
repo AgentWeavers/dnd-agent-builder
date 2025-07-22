@@ -6,12 +6,12 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 # Import from OpenAI Agents SDK
-from agents import Agent, Runner
+from agents import Agent, Runner, TResponseInputItem
 from agents.stream_events import (
     AgentUpdatedStreamEvent, 
     RawResponsesStreamEvent, 
     RunItemStreamEvent,
-    StreamEvent
+    StreamEvent,
 )
 from agents.items import ItemHelpers
 from agents.run_context import RunContextWrapper
@@ -24,8 +24,7 @@ logger = get_logger(__name__)
 
 class AgentRequest(BaseModel):
     """Standard request model for agent interactions."""
-    message: str
-    max_turns: int = 10
+    input: str | list[TResponseInputItem]
     context: Optional[dict[str, Any]] = None
 
 
@@ -71,7 +70,7 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
         This is a standard synchronous endpoint that returns the complete response.
         """
         try:
-            logger.info(f"Running {agent_name} with message: {request.message[:100]}...")
+            logger.info(f"Running {agent_name} with input: {request.input}")
             
             # Create context wrapper if context is provided
             context_wrapper = None
@@ -81,8 +80,7 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
             # Run the agent synchronously
             result = await Runner.run(
                 starting_agent=agent,
-                input=request.message,
-                max_turns=request.max_turns,
+                input=request.input,
                 context=request.context
             )
             
@@ -120,8 +118,7 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
             try:
                 stream_result = Runner.run_streamed(
                     starting_agent=agent,
-                    input=request.message,
-                    max_turns=request.max_turns,
+                    input=request.input,
                     context=request.context,
                 )
                 
@@ -130,6 +127,14 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
                     formatted_event = _format_stream_event(event)
                     if formatted_event:
                         yield f"data: {json.dumps(formatted_event)}\n\n"
+                
+                logger.info("\n\n")
+                logger.info("-"*100)
+                logger.info(f"Stream complete: {stream_result.final_output}")
+                logger.info(f"Stream complete: {stream_result.current_turn}")
+                logger.info(f"Stream complete: {stream_result.to_input_list()}")
+                logger.info("-"*100)
+                logger.info("\n\n")
                 
                 # Send completion event
                 completion_event = {
