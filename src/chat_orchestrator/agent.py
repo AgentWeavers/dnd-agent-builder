@@ -1,6 +1,6 @@
 from agents import Agent, ItemHelpers, MessageOutputItem, RunContextWrapper, ToolCallItem, ToolCallOutputItem, TResponseInputItem, function_tool, handoff, trace
 
-from planner_agent.agent import planner_supervisor_agent
+from src.planner_agent.agent import planner_supervisor_agent
 
 chat_agent = Agent(
     name="chat_agent",

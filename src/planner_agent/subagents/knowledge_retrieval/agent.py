@@ -2,7 +2,7 @@ import os
 from agents import Agent, function_tool
 from tavily import AsyncTavilyClient
 from dotenv import load_dotenv
-from planner_agent.subagents.prompt import knowledge_retrieval_agent_prompt
+from src.planner_agent.subagents.prompt import knowledge_retrieval_agent_prompt
 
 load_dotenv()
 
