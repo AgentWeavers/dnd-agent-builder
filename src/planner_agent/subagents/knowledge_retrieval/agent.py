@@ -2,7 +2,7 @@ import os
 from agents import Agent, function_tool
 from tavily import AsyncTavilyClient
 from dotenv import load_dotenv
-from src.planner_agent.subagents.prompt import knowledge_retrieval_agent_prompt
+from src.planner_agent.subagents.knowledge_retrieval.knowledge_retrieval_prompt import knowledge_retrieval_agent_prompt_v1
 
 load_dotenv()
 
@@ -24,5 +24,5 @@ knowledge_retrieval_agent = Agent(
   name="Knowledge Retrieval Agent",
   model="gpt-4.1-nano",
   tools=[web_search],
-  instructions=knowledge_retrieval_agent_prompt
+  instructions=knowledge_retrieval_agent_prompt_v1
 )
