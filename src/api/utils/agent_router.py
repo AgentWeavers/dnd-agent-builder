@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Optional, List
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -19,7 +19,7 @@ from agents.run_context import RunContextWrapper
 from openai.types.responses.response_text_delta_event import ResponseTextDeltaEvent
 
 from .logging import get_logger
-from .session_utils import create_session_if_enabled, clear_session, get_session_info
+from .session_utils import create_session_if_enabled, clear_session, get_session_info, get_session_messages
 
 
 class AgentRequest(BaseModel):
@@ -37,6 +37,15 @@ class AgentResponse(BaseModel):
     usage: Optional[dict[str, Any]] = None
     response_id: Optional[str] = None
     session_id: Optional[str] = None
+
+
+class SessionMessagesResponse(BaseModel):
+    """Response model for session messages."""
+    session_id: str
+    messages: List[dict[str, Any]]
+    message_count: int
+    success: bool = True
+    error: Optional[str] = None
 
 
 class AgentInfo(BaseModel):
@@ -179,6 +188,53 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
             }
         )
 
+    @router.get("/session/{session_id}", response_model=SessionMessagesResponse)
+    async def get_agent_session_messages(session_id: str, limit: Optional[int] = None):
+        """Retrieve all messages for a specific session."""
+        try:
+            messages = await get_session_messages(session_id, limit=limit)
+            if messages is not None:
+                # Convert messages to serializable format
+                serialized_messages = []
+                for message in messages:
+                    if isinstance(message, dict):
+                        serialized_messages.append(message)
+                    else:
+                        # Handle case where message might be a complex object
+                        try:
+                            # Try to convert to dict if it has __dict__ attribute
+                            if hasattr(message, '__dict__'):
+                                serialized_messages.append(message.__dict__)
+                            else:
+                                # Fallback to string representation
+                                serialized_messages.append({"content": str(message)})
+                        except Exception:
+                            serialized_messages.append({"content": str(message)})
+                
+                return SessionMessagesResponse(
+                    session_id=session_id,
+                    messages=serialized_messages,
+                    message_count=len(serialized_messages),
+                    success=True
+                )
+            else:
+                return SessionMessagesResponse(
+                    session_id=session_id,
+                    messages=[],
+                    message_count=0,
+                    success=False,
+                    error="Session not found or sessions disabled"
+                )
+        except Exception as e:
+            logger.error(f"Error retrieving session messages: {e}")
+            return SessionMessagesResponse(
+                session_id=session_id,
+                messages=[],
+                message_count=0,
+                success=False,
+                error=str(e)
+            )
+
     @router.delete("/session/{session_id}")
     async def clear_agent_session(session_id: str):
         """Clear conversation history for a specific session."""
@@ -220,7 +276,8 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
             # Build endpoints dict
             endpoints = {
                 "run": f"{prefix}/run",
-                "stream": f"{prefix}/stream", 
+                "stream": f"{prefix}/stream",
+                "get_session": f"{prefix}/session/{{session_id}}",
                 "clear_session": f"{prefix}/session/{{session_id}}",
                 "info": f"{prefix}/info"
             }
@@ -310,6 +367,21 @@ def _format_raw_response_event(event: RawResponsesStreamEvent) -> dict[str, Any]
                 "delta": getattr(event.data, 'delta', ''),
                 "refusal": True
             })
+            
+        # Capture tool name when tool call starts 
+        elif event_type == "response.output_item.added":  
+            item_obj = getattr(event.data, 'item', None)  
+            base_event.update({  
+                "output_index": getattr(event.data, 'output_index', 0),  
+                "item_type": getattr(item_obj, 'type', None) if item_obj else None  
+            })  
+              
+            # Extract tool name if this is a function tool call  
+            if item_obj and hasattr(item_obj, 'name'):  
+                base_event.update({  
+                    "tool_name": item_obj.name,  # Tool name available here!  
+                    "call_id": getattr(item_obj, 'call_id', None)  
+                })
         
         # Function call arguments
         elif event_type == "response.function_call_arguments.delta":
@@ -371,9 +443,9 @@ def _format_run_item_event(event: RunItemStreamEvent) -> dict[str, Any]:
     
     elif event.name == "tool_called":
         base_event.update({
-            "tool_name": getattr(event.item, 'name', None),
-            "tool_arguments": getattr(event.item, 'arguments', None),
-            "call_id": getattr(event.item, 'id', None)
+            "tool_name": getattr(event.item.raw_item, 'name', None),
+            "tool_arguments": getattr(event.item.raw_item, 'arguments', None),
+            "call_id": getattr(event.item.raw_item, 'id', None)
         })
     
     elif event.name == "tool_output":
