@@ -3,6 +3,7 @@ from agents import Agent, function_tool
 from tavily import AsyncTavilyClient
 from dotenv import load_dotenv
 from src.planner_agent.subagents.knowledge_retrieval.knowledge_retrieval_prompt import knowledge_retrieval_agent_prompt_v1
+from src.deep_research_agent.agent import create_main_orchestrator_agent
 
 load_dotenv()
 
@@ -22,7 +23,12 @@ async def web_search(query: str) -> dict:
 
 knowledge_retrieval_agent = Agent(
   name="Knowledge Retrieval Agent",
-  model="gpt-4.1-nano",
-  tools=[web_search],
+  model="gpt-4.1-mini",
+  tools=[
+    web_search,       
+    create_main_orchestrator_agent.as_tool(
+      tool_name="deep_research_orchestrator",
+      tool_description="The Deep Research Orchestrator is responsible for orchestrating the deep research process, including the use of tools to conduct research and generate a final report."
+    )],
   instructions=knowledge_retrieval_agent_prompt_v1
 )
