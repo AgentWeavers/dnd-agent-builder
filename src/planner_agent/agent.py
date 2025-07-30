@@ -2,7 +2,6 @@ from agents import Agent, function_tool
 from src.planner_agent.subagents.intent_analyzer import intent_analyzer_agent
 from src.planner_agent.subagents.knowledge_retrieval import knowledge_retrieval_agent
 from src.planner_agent.subagents.workflow_designer.agent import workflow_designer_agent
-from src.deep_research_agent.agent import create_main_orchestrator_agent
 
 @function_tool
 def think(thought: str) -> str:

@@ -26,7 +26,7 @@ knowledge_retrieval_agent = Agent(
   model="gpt-4.1-mini",
   tools=[
     web_search,       
-    create_main_orchestrator_agent.as_tool(
+    create_main_orchestrator_agent().as_tool(
       tool_name="deep_research_orchestrator",
       tool_description="The Deep Research Orchestrator is responsible for orchestrating the deep research process, including the use of tools to conduct research and generate a final report."
     )],
