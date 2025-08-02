@@ -1,0 +1,56 @@
+metadata:
+  name: "customer_support_agent"
+  version: "1.0.0"
+  description: "AI agent for handling customer support inquiries"
+  created_by: "user_id_123"
+  tags: ["customer-support", "production"]
+
+agent_config:
+  model: "gpt-4o"
+  temperature: 0.7
+  max_tokens: 4000
+  instructions: |
+    You are a helpful customer support agent. Always be polite and professional.
+    Use the available tools to help customers with their inquiries.
+  
+tools:
+  - name: "search_knowledge_base"
+    type: "custom_function"
+    implementation: "tools/search_kb.py"
+    description: "Search the company knowledge base for relevant information"
+    
+  - name: "create_ticket"
+    type: "custom_function" 
+    implementation: "tools/ticket_manager.py"
+    description: "Create support tickets for complex issues"
+    
+  - name: "code_interpreter"
+    type: "builtin"
+    enabled: true
+
+sub_agents:
+  - name: "escalation_agent"
+    spec_path: "agents/escalation_agent/spec.yaml"
+    trigger_conditions:
+      - "customer_satisfaction_score < 3"
+      - "issue_complexity == 'high'"
+
+context:
+  knowledge_base:
+    - path: "context/company_policies.md"
+      type: "markdown"
+    - path: "context/product_documentation/"
+      type: "directory"
+      
+  conversation_memory:
+    type: "persistent"
+    max_history: 100
+    
+mcp_servers:
+  - name: "crm_server"
+    url: "mcp://localhost:3001"
+    description: "Access to CRM system data"
+    
+  - name: "analytics_server" 
+    url: "mcp://localhost:3002"
+    description: "Customer analytics and insights"
