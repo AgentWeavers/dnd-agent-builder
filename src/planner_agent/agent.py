@@ -231,7 +231,7 @@ You MUST plan extensively before each function call, and reflect extensively on 
 planner_supervisor_agent = Agent(
   name="Planner Supervisor",
   instructions=get_prompt(),
-  model="gpt-4.1-nano",
+  model="gpt-4.1-mini",
   tools=[
     think, 
     intent_analyzer_agent.as_tool(
