@@ -2,7 +2,7 @@ import os
 from agents import Agent, function_tool
 from tavily import AsyncTavilyClient
 from dotenv import load_dotenv
-from src.planner_agent.subagents.knowledge_retrieval.knowledge_retrieval_prompt import knowledge_retrieval_agent_prompt_v2
+from src.planner_agent.subagents.knowledge_retrieval.knowledge_retrieval_prompt import knowledge_retrieval_agent_prompt_v3
 from src.deep_research_agent.agent import create_main_orchestrator_agent
 
 load_dotenv()
@@ -30,5 +30,5 @@ knowledge_retrieval_agent = Agent(
       tool_name="deep_research_orchestrator",
       tool_description="The Deep Research Orchestrator is responsible for orchestrating the deep research process, including the use of tools to conduct research and generate a final report."
     )],
-  instructions=knowledge_retrieval_agent_prompt_v2
+  instructions=knowledge_retrieval_agent_prompt_v3
 )
