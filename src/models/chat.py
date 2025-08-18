@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from datetime import datetime, timezone
 import uuid
 from sqlalchemy import JSON, Column, Index
@@ -14,8 +14,8 @@ class Chat(SQLModel, table=True):
     # Foreign key to user (not primary key)
     user_id: str = Field(index=True)  # Reference to Stack Auth user
     
-    # Conversation data stored as JSONB
-    conversation: Optional[Dict[str, Any]] = Field(
+    # Conversation data stored as JSONB - List of conversation messages
+    conversation: Optional[list[dict[str, Any]]] = Field(
         default=None, 
         sa_type=JSON
     )

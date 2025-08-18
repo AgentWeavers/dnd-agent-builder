@@ -1,21 +1,23 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from datetime import datetime
 
 class ChatBase(BaseModel):
     """Base chat schema with common fields."""
     title: Optional[str] = None
-    conversation: Optional[Dict[str, Any]] = None
+    conversation: Optional[list[dict[str, Any]]] = None  # List of conversation messages
     is_active: bool = True
 
-class ChatCreate(ChatBase):
+class ChatCreate(BaseModel):
     """Schema for creating a new chat."""
-    pass
+    title: Optional[str] = None
+    conversation: Optional[list[dict[str, Any]]] = None
+    is_active: bool = True
 
 class ChatUpdate(BaseModel):
     """Schema for updating an existing chat."""
     title: Optional[str] = None
-    conversation: Optional[Dict[str, Any]] = None
+    conversation: Optional[list[dict[str, Any]]] = None
     is_active: Optional[bool] = None
 
 class ChatResponse(ChatBase):
