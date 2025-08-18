@@ -1,0 +1,47 @@
+services: 
+  api: 
+    build: . 
+    # Use uv run to ensure proper venv activation
+    command: uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload 
+    ports: 
+      - "8000:8000" 
+    environment: 
+      DATABASE_URL: postgresql+asyncpg://user:password@dnd_agent_db:5432/dnd_agent_db 
+      REDIS_HOST: dnd_agent_redis 
+      REDIS_PORT: 6379 
+      REDIS_DB: 0 
+      LOG_LEVEL: INFO 
+      LOG_FORMAT: console 
+      DATABASE_ECHO: "false" 
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-} 
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-} 
+    depends_on: 
+      - dnd_agent_db 
+      - dnd_agent_redis 
+    volumes: 
+      - .:/app
+      # Use anonymous volume to prevent host .venv conflicts
+      - /app/.venv 
+ 
+  dnd_agent_db: 
+    image: postgres:16-alpine 
+    environment: 
+      POSTGRES_DB: dnd_agent_db 
+      POSTGRES_USER: user 
+      POSTGRES_PASSWORD: password 
+    ports: 
+      - "5445:5432" 
+    volumes: 
+      - dnd_agent_db_data:/var/lib/postgresql/data 
+ 
+  dnd_agent_redis: 
+    image: redis:7-alpine 
+    command: redis-server --appendonly yes 
+    ports: 
+      - "6385:6379" 
+    volumes: 
+      - dnd_agent_redis_data:/data 
+ 
+volumes: 
+  dnd_agent_db_data: 
+  dnd_agent_redis_data:

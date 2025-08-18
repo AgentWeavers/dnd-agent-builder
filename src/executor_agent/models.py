@@ -17,7 +17,7 @@ class BaseAgentSpecification(BaseModel):
     name: str = Field(description="The name of the agent")
     version: Optional[str] = Field(description="The version of the agent", default="1.0.0")
     description: str = Field(description="A brief description of the agent")
-    tags: Optional[list[str]] = Field(description="A list of tags for the agent", default=["agent", "openai-agents"])
+    tags: Optional[list[str]] = Field(description="A list of tags for the agent", default_factory=list)
     
     # Agent Configuration
     model: str = Field(description="The model to use for the agent", default="gpt-4.1-mini")
@@ -28,16 +28,16 @@ class BaseAgentSpecification(BaseModel):
     instructions: Optional[str] = Field(description="The instructions for the agent")
     
     # Tools
-    tools: Optional[list[ToolSpecification]] = Field(description="The tools to use for the agent", default=None)
+    tools: Optional[list[ToolSpecification]] = Field(description="The tools to use for the agent", default_factory=list)
     
     # Context
     context: Optional[dict[str, Any]] = Field(description="The context for the agent", default=None)
 
     # MCP Servers
-    mcp_servers: Optional[list[dict[str, Any]]] = Field(description="The MCP servers to use for the agent", default=None)
+    mcp_servers: Optional[list[dict[str, Any]]] = Field(description="The MCP servers to use for the agent", default_factory=list)
 
     # Handoffs
-    handoffs: Optional[list[str]] = Field(description="The handoffs to use for the agent", default=None)
+    handoffs: Optional[list[str]] = Field(description="The handoffs to use for the agent", default_factory=list)
     
     # Handoff Description
     handoff_description: Optional[str] = Field(description="The handoff description for the agent", default=None)
