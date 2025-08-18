@@ -7,14 +7,16 @@ from dotenv import load_dotenv
 from agents import set_default_openai_api
 
 from src.api.routers.chat import router as chat_router
-from src.api.utils.logging import get_logger
+from src.core.logging import configure_logging
+import structlog
 
-logger = get_logger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
+    configure_logging()
     logger.info("Starting AgentWeaver application...")
     
     # Load environment variables

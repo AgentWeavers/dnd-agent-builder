@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, status, Request, Header
 from src.core.stack_auth import stack_auth_client, StackAuthUser
 import structlog
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(__name__)
 
 def get_stack_auth_client():
     """Get Stack Auth client instance."""

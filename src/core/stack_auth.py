@@ -1,12 +1,10 @@
 import requests
-# import jwt
-# from jwt import PyJWKClient
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
 import structlog
 from src.core.config import settings
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(__name__)
 
 class StackAuthUser(BaseModel):
     """Official Stack Auth user data structure based on API documentation"""

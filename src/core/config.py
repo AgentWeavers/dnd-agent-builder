@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     session_db_path: str = os.getenv("SESSION_DB_PATH", "")
     tavily_api_key: str = os.getenv("TAVILY_API_KEY", "")
     deep_research_search_api: str = os.getenv("DEEP_RESEARCH_SEARCH_API", "")
+    log_level: str = os.getenv("LOG_LEVEL", "INFO").upper()
+    log_format: str = os.getenv("LOG_FORMAT", "console")
     
     class Config:
         env_file = ".env"
