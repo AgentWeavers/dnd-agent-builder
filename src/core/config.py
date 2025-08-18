@@ -16,7 +16,17 @@ class Settings(BaseSettings):
     stack_api_base_url: str = os.getenv("STACK_API_BASE_URL", "https://api.stack-auth.com")
     
     # Database Configuration
-    database_url: str = os.getenv("DATABASE_URL", "")
+    database_url: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5433/dnd_agent_db")
+    
+    @property
+    def async_database_url(self) -> str:
+        """Ensure the database URL uses the asyncpg driver."""
+        url = self.database_url
+        if url.startswith("postgresql://") and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://")
+        return url
+
+    database_echo: bool = os.getenv("DATABASE_ECHO", "true").lower() in ("1", "true", "yes")
     
     # Application Configuration
     app_name: str = "DND Agent Builder API"

@@ -8,6 +8,8 @@ from agents import set_default_openai_api
 
 from src.api.routers.chat import router as chat_router
 from src.core.logging import configure_logging
+from src.core.database import engine
+from sqlmodel import SQLModel
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -15,7 +17,7 @@ logger = structlog.get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager."""
+    # Startup: Initialize logging, database
     configure_logging()
     logger.info("Starting AgentWeaver application...")
     
@@ -28,6 +30,11 @@ async def lifespan(app: FastAPI):
         set_default_openai_api(api_key)
         logger.info("OpenAI API key configured")
     
+    # Create all tables if they don't exist
+    logger.info("Creating database tables (if not exist)...")
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+    logger.info("Database tables created/ensured.")
     logger.info("AgentWeaver startup complete")
     
     yield
