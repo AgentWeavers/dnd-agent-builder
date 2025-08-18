@@ -24,22 +24,24 @@ async def get_access_token(
         logger.warning("Missing x-stack-auth header")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Access token required in x-stack-auth header"
+            detail="Authentication failed"
         )
     
     try:
         auth_data = json.loads(x_stack_auth)
         access_token = auth_data.get("accessToken")
         if not access_token:
+            logger.warning("'accessToken' not found in x-stack-auth header")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="'accessToken' not found in x-stack-auth header"
+                detail="Authentication failed"
             )
         return access_token
     except json.JSONDecodeError:
+        logger.warning("Invalid JSON in x-stack-auth header")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid JSON in x-stack-auth header"
+            detail="Authentication failed"
         )
 
 async def get_current_user(

@@ -7,9 +7,11 @@ from dotenv import load_dotenv
 from agents import set_default_openai_api
 
 from src.api.routers.chat import router as chat_router
+from src.api.routers.chat_storage import router as chat_storage_router
 from src.core.logging import configure_logging
 from src.core.database import engine
 from sqlmodel import SQLModel
+from src.models.chat import Chat  # Import Chat model for database creation
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -62,6 +64,7 @@ app.add_middleware(
 )
 
 app.include_router(chat_router)         # /chat/* endpoints
+app.include_router(chat_storage_router) # /chats/* endpoints
 
 @app.get("/")
 async def root():
