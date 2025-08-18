@@ -1,1 +1,4 @@
-> improve the planner system prompt that it should stop if any tool asks for clarification at any level
+1. Stack Auth Token Verification and UserID retrival 
+2. Setup Database, tables, user chat table
+3. Deployment
+4. Overall Context Implementation 
