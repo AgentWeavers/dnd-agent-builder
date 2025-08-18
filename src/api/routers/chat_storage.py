@@ -12,7 +12,7 @@ import structlog
 
 logger = structlog.get_logger()
 
-router = APIRouter(prefix="/chats", tags=["chats"])
+router = APIRouter(prefix="/chats", tags=["Chats"])
 
 @router.post("/", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
 async def create_new_chat(
@@ -65,7 +65,7 @@ async def get_chat(
 ):
     """Get a specific chat by ID."""
     try:
-        chat = await get_chat_by_id(session, user_data["user_id"], chat_id)
+        chat = await get_chat_by_id(session, chat_id, user_data["user_id"])
         if not chat:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -91,7 +91,7 @@ async def update_chat_details(
 ):
     """Update an existing chat."""
     try:
-        chat = await update_chat(session, user_data["user_id"], chat_id, chat_data)
+        chat = await update_chat(session, chat_id, user_data["user_id"], chat_data)
         if not chat:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -116,7 +116,7 @@ async def delete_chat_endpoint(
 ):
     """Delete a chat (soft delete)."""
     try:
-        success = await delete_chat(session, user_data["user_id"], chat_id)
+        success = await delete_chat(session, chat_id, user_data["user_id"])
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

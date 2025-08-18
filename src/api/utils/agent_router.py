@@ -2,9 +2,10 @@ import json
 import logging
 from typing import Any, AsyncGenerator, Optional, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Import from OpenAI Agents SDK
 from agents import Agent, Runner, TResponseInputItem
@@ -20,7 +21,7 @@ from openai.types.responses.response_text_delta_event import ResponseTextDeltaEv
 
 import structlog
 
-from .session_utils import create_session_if_enabled, clear_session, get_session_info, get_session_messages
+from .session_utils import create_session_if_enabled, clear_session, get_session_messages, get_session_info
 
 
 
@@ -62,24 +63,25 @@ class AgentInfo(BaseModel):
     session_config: dict[str, Any]  # Session configuration info
 
 
-def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter:
+def create_agent_router(agent: Agent, prefix: str, agent_name: str, get_db_session) -> APIRouter:
     """
-    Create a standardized router for an agent with run, run_streamed endpoints and automatic session support.
+    Create a standardized router for an agent with run and stream endpoints.
     
-    Sessions are automatically enabled based on environment variables:
-    - ENABLE_SESSIONS=true (enables session memory)
-    - SESSION_DB_PATH=./conversations.db (optional, sets database path)
+    Sessions are automatically enabled by default for all agent interactions.
+    When session_id is provided in requests, conversation history is automatically 
+    preserved across interactions using PostgreSQL.
     
-    When sessions are enabled and session_id is provided in requests,
-    conversation history is automatically preserved across interactions.
+    Note: Session management (viewing/clearing conversation history) is handled by
+    the chat storage router (/chats endpoints) for better separation of concerns.
     
     Args:
         agent: The OpenAI Agent instance
         prefix: URL prefix for the router (e.g., "/chat")
         agent_name: Human-readable name for the agent
+        get_db_session: Dependency to get database session
     
     Returns:
-        APIRouter with standardized endpoints
+        APIRouter with agent execution endpoints
     """
     # Create agent-specific logger for better log context
     logger = structlog.get_logger(agent_name)
@@ -87,21 +89,19 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
     router = APIRouter(prefix=prefix, tags=[agent_name])
     
     @router.post("/run", response_model=AgentResponse)
-    async def run_agent(request: AgentRequest):
+    async def run_agent(request: AgentRequest, db_session: AsyncSession = Depends(get_db_session)):
         """
         Run the agent and return the final result.
         
-        Automatically uses session memory if:
-        - ENABLE_SESSIONS=true in environment
-        - session_id is provided in request
+        Automatically uses PostgreSQL session memory if session_id is provided in request.
         """
         try:
             logger.info(f"Running {agent_name} with input: {request.input}")
 
-            # Automatically create session if enabled and session_id provided
-            session = create_session_if_enabled(request.session_id)
+            # Automatically create PostgreSQL session if session_id provided
+            session = await create_session_if_enabled(request.session_id, db_session)
             if session:
-                logger.info(f"Using session memory: {request.session_id}")
+                logger.info(f"Using PostgreSQL session memory: {request.session_id}")
             
             # Run the agent synchronously
             result = await Runner.run(
@@ -131,20 +131,18 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
             )
 
     @router.post("/stream")
-    async def stream_agent(request: AgentRequest):
+    async def stream_agent(request: AgentRequest, db_session: AsyncSession = Depends(get_db_session)):
         """
-        Stream agent responses with events and automatic session support.
+        Stream agent responses with events and automatic PostgreSQL session support.
         
-        Automatically uses session memory if:
-        - ENABLE_SESSIONS=true in environment  
-        - session_id is provided in request
+        Automatically uses PostgreSQL session memory if session_id is provided in request.
         """
         async def generate_stream() -> AsyncGenerator[str, None]:
             try:
-                # Automatically create session if enabled and session_id provided
-                session = create_session_if_enabled(request.session_id)
+                # Automatically create PostgreSQL session if session_id provided
+                session = await create_session_if_enabled(request.session_id, db_session)
                 if session:
-                    logger.info(f"Using session memory for streaming: {request.session_id}")
+                    logger.info(f"Using PostgreSQL session memory for streaming: {request.session_id}")
                 
                 stream_result = Runner.run_streamed(
                     starting_agent=agent,
@@ -190,66 +188,6 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
             }
         )
 
-    @router.get("/session/{session_id}", response_model=SessionMessagesResponse)
-    async def get_agent_session_messages(session_id: str, limit: Optional[int] = None):
-        """Retrieve all messages for a specific session."""
-        try:
-            messages = await get_session_messages(session_id, limit=limit)
-            if messages is not None:
-                # Convert messages to serializable format
-                serialized_messages = []
-                for message in messages:
-                    if isinstance(message, dict):
-                        serialized_messages.append(message)
-                    else:
-                        # Handle case where message might be a complex object
-                        try:
-                            # Try to convert to dict if it has __dict__ attribute
-                            if hasattr(message, '__dict__'):
-                                serialized_messages.append(message.__dict__)
-                            else:
-                                # Fallback to string representation
-                                serialized_messages.append({"content": str(message)})
-                        except Exception:
-                            serialized_messages.append({"content": str(message)})
-                
-                return SessionMessagesResponse(
-                    session_id=session_id,
-                    messages=serialized_messages,
-                    message_count=len(serialized_messages),
-                    success=True
-                )
-            else:
-                return SessionMessagesResponse(
-                    session_id=session_id,
-                    messages=[],
-                    message_count=0,
-                    success=False,
-                    error="Session not found or sessions disabled"
-                )
-        except Exception as e:
-            logger.error(f"Error retrieving session messages: {e}")
-            return SessionMessagesResponse(
-                session_id=session_id,
-                messages=[],
-                message_count=0,
-                success=False,
-                error=str(e)
-            )
-
-    @router.delete("/session/{session_id}")
-    async def clear_agent_session(session_id: str):
-        """Clear conversation history for a specific session."""
-        try:
-            success = clear_session(session_id)
-            if success:
-                return {"message": f"Session {session_id} cleared successfully", "success": True}
-            else:
-                return {"message": f"Failed to clear session {session_id}", "success": False}
-        except Exception as e:
-            logger.error(f"Error clearing session: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
     @router.get("/info", response_model=AgentInfo)
     async def get_agent_info():
         """Get comprehensive information about this agent."""
@@ -279,8 +217,6 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
             endpoints = {
                 "run": f"{prefix}/run",
                 "stream": f"{prefix}/stream",
-                "get_session": f"{prefix}/session/{{session_id}}",
-                "clear_session": f"{prefix}/session/{{session_id}}",
                 "info": f"{prefix}/info"
             }
             

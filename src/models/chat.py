@@ -2,17 +2,17 @@ from sqlmodel import SQLModel, Field
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 import uuid
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON, Column, Index
 from sqlalchemy.types import DateTime
 
 class Chat(SQLModel, table=True):
     __tablename__ = "chats"
     
-    # Primary key is user_id from Stack Auth
-    user_id: str = Field(primary_key=True, index=True)
+    # Primary key should be chat_id for unique chats
+    chat_id: str = Field(primary_key=True, default_factory=lambda: str(uuid.uuid4()), index=True)
     
-    # Chat session identifier
-    chat_id: str = Field(default_factory=lambda: str(uuid.uuid4()), index=True)
+    # Foreign key to user (not primary key)
+    user_id: str = Field(index=True)  # Reference to Stack Auth user
     
     # Conversation data stored as JSONB
     conversation: Optional[Dict[str, Any]] = Field(
@@ -27,7 +27,7 @@ class Chat(SQLModel, table=True):
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=datetime.now(timezone.utc))
     )
     
     # Optional fields for chat management

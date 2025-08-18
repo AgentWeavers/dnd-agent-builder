@@ -25,11 +25,27 @@ async def create_chat(session: AsyncSession, user_id: str, chat_data: ChatCreate
     logger.info("Created chat", chat_id=chat.chat_id, user_id=user_id)
     return chat
 
-async def get_chat_by_id(session: AsyncSession, user_id: str, chat_id: str) -> Optional[Chat]:
+async def create_new_chat_for_user(session: AsyncSession, user_id: str, title: Optional[str] = None) -> str:
+    """Create a new chat for a user and return the chat_id for use with DatabaseSession."""
+    chat = Chat(
+        user_id=user_id,
+        title=title or f"Chat {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        conversation=None,
+        is_active=True
+    )
+    
+    session.add(chat)
+    await session.commit()
+    await session.refresh(chat)
+    
+    logger.info("Created new chat for user", chat_id=chat.chat_id, user_id=user_id)
+    return chat.chat_id
+
+async def get_chat_by_id(session: AsyncSession, chat_id: str, user_id: str) -> Optional[Chat]:
     """Get a specific chat by ID for a user."""
     statement = select(Chat).where(
-        Chat.user_id == user_id,
-        Chat.chat_id == chat_id
+        Chat.chat_id == chat_id,
+        Chat.user_id == user_id
     )
     result = await session.execute(statement)
     return result.scalars().first()
@@ -54,12 +70,12 @@ async def get_user_chats(
 
 async def update_chat(
     session: AsyncSession, 
-    user_id: str, 
     chat_id: str, 
+    user_id: str,
     chat_data: ChatUpdate
 ) -> Optional[Chat]:
     """Update an existing chat."""
-    chat = await get_chat_by_id(session, user_id, chat_id)
+    chat = await get_chat_by_id(session, chat_id, user_id)
     if not chat:
         return None
     
@@ -71,8 +87,8 @@ async def update_chat(
         statement = (
             update(Chat)
             .where(
-                Chat.user_id == user_id,
-                Chat.chat_id == chat_id
+                Chat.chat_id == chat_id,
+                Chat.user_id == user_id
             )
             .values(**update_data)
         )
@@ -84,9 +100,9 @@ async def update_chat(
     
     return chat
 
-async def delete_chat(session: AsyncSession, user_id: str, chat_id: str) -> bool:
+async def delete_chat(session: AsyncSession, chat_id: str, user_id: str) -> bool:
     """Delete a chat (soft delete by setting is_active to False)."""
-    chat = await get_chat_by_id(session, user_id, chat_id)
+    chat = await get_chat_by_id(session, chat_id, user_id)
     if not chat:
         return False
     
@@ -97,9 +113,9 @@ async def delete_chat(session: AsyncSession, user_id: str, chat_id: str) -> bool
     logger.info("Deleted chat", chat_id=chat_id, user_id=user_id)
     return True
 
-async def hard_delete_chat(session: AsyncSession, user_id: str, chat_id: str) -> bool:
+async def hard_delete_chat(session: AsyncSession, chat_id: str, user_id: str) -> bool:
     """Permanently delete a chat from the database."""
-    chat = await get_chat_by_id(session, user_id, chat_id)
+    chat = await get_chat_by_id(session, chat_id, user_id)
     if not chat:
         return False
     

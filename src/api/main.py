@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from agents import set_default_openai_api
 
-from src.api.routers.chat import router as chat_router
+from src.api.routers.agent_router import router as agent_router
 from src.api.routers.chat_storage import router as chat_storage_router
 from src.core.logging import configure_logging
 from src.core.database import engine
@@ -63,7 +63,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(chat_router)         # /chat/* endpoints
+app.include_router(agent_router)         # /* endpoints
 app.include_router(chat_storage_router) # /chats/* endpoints
 
 @app.get("/")
