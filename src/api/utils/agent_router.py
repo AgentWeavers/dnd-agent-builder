@@ -22,6 +22,7 @@ from openai.types.responses.response_text_delta_event import ResponseTextDeltaEv
 import structlog
 
 from .session_utils import create_session_if_enabled, clear_session, get_session_messages, get_session_info
+from src.dependencies.auth import get_current_user
 
 
 
@@ -89,7 +90,11 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str, get_db_sessi
     router = APIRouter(prefix=prefix, tags=[agent_name])
     
     @router.post("/run", response_model=AgentResponse)
-    async def run_agent(request: AgentRequest, db_session: AsyncSession = Depends(get_db_session)):
+    async def run_agent(
+        request: AgentRequest, 
+        db_session: AsyncSession = Depends(get_db_session),
+        user_data: dict = Depends(get_current_user)
+    ):
         """
         Run the agent and return the final result.
         
@@ -99,7 +104,11 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str, get_db_sessi
             logger.info(f"Running {agent_name} with input: {request.input}")
 
             # Automatically create PostgreSQL session if session_id provided
-            session = await create_session_if_enabled(request.session_id, db_session)
+            session = await create_session_if_enabled(
+                request.session_id, 
+                db_session, 
+                user_data["user_id"]
+            )
             if session:
                 logger.info(f"Using PostgreSQL session memory: {request.session_id}")
             
@@ -131,7 +140,11 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str, get_db_sessi
             )
 
     @router.post("/stream")
-    async def stream_agent(request: AgentRequest, db_session: AsyncSession = Depends(get_db_session)):
+    async def stream_agent(
+        request: AgentRequest, 
+        db_session: AsyncSession = Depends(get_db_session),
+        user_data: dict = Depends(get_current_user)
+    ):
         """
         Stream agent responses with events and automatic PostgreSQL session support.
         
@@ -140,7 +153,11 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str, get_db_sessi
         async def generate_stream() -> AsyncGenerator[str, None]:
             try:
                 # Automatically create PostgreSQL session if session_id provided
-                session = await create_session_if_enabled(request.session_id, db_session)
+                session = await create_session_if_enabled(
+                    request.session_id, 
+                    db_session, 
+                    user_data["user_id"]
+                )
                 if session:
                     logger.info(f"Using PostgreSQL session memory for streaming: {request.session_id}")
                 

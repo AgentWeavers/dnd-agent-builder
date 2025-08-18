@@ -6,6 +6,25 @@ from src.models.chat import Chat
 import json
 import structlog
 from datetime import datetime, timezone
+import uuid
+
+
+def is_valid_uuid(uuid_string: str) -> bool:
+    """
+    Validate if a string is a valid UUID format.
+    
+    Args:
+        uuid_string: String to validate
+        
+    Returns:
+        bool: True if valid UUID format, False otherwise
+    """
+    try:
+        uuid.UUID(uuid_string)
+        return True
+    except ValueError:
+        return False
+
 
 logger = structlog.get_logger()
 
@@ -15,16 +34,21 @@ class DatabaseSession:
     Follows the OpenAI Agents SDK Session protocol.
     """
     
-    def __init__(self, chat_id: str, db_session: AsyncSession):
+    def __init__(self, chat_id: str, db_session: AsyncSession, user_id: Optional[str] = None):
         """
         Initialize database session.
         
         Args:
             chat_id: Unique chat identifier
             db_session: SQLAlchemy async session for database operations
+            user_id: Optional user ID for auto-creating chats when they don't exist
         """
+        if not is_valid_uuid(chat_id):
+            raise ValueError(f"Invalid UUID format: {chat_id}")
+            
         self.chat_id = chat_id
         self.db_session = db_session
+        self.user_id = user_id
         self._conversation_history: List[dict] = []
         self._loaded = False
     
@@ -138,8 +162,37 @@ class DatabaseSession:
                            chat_id=self.chat_id, 
                            items_count=len(self._conversation_history))
             else:
-                logger.warning("No chat record found for conversation storage", 
-                             chat_id=self.chat_id)
+                # Chat doesn't exist - try to create it if we have user_id
+                if self.user_id:
+                    try:
+                        # Create new chat with the provided chat_id
+                        new_chat = Chat(
+                            chat_id=self.chat_id,  # Use the provided UUID
+                            user_id=self.user_id,
+                            title=f"Chat {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                            conversation=None if clear else self._conversation_history,
+                            is_active=True,
+                            created_at=datetime.now(timezone.utc),
+                            updated_at=datetime.now(timezone.utc)
+                        )
+                        
+                        self.db_session.add(new_chat)
+                        await self.db_session.commit()
+                        
+                        logger.info("Auto-created new chat for user", 
+                                  chat_id=self.chat_id, 
+                                  user_id=self.user_id,
+                                  items_count=len(self._conversation_history))
+                    except Exception as create_error:
+                        logger.error("Failed to auto-create chat", 
+                                   error=str(create_error), 
+                                   chat_id=self.chat_id, 
+                                   user_id=self.user_id)
+                        await self.db_session.rollback()
+                        raise
+                else:
+                    logger.warning("No chat record found for conversation storage and no user_id provided for auto-creation", 
+                                 chat_id=self.chat_id)
                 
         except Exception as e:
             logger.error("Failed to save conversation history", 
