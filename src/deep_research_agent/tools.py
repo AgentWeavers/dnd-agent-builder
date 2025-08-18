@@ -1,9 +1,9 @@
 from typing import List
+import structlog
 from agents import function_tool, RunContextWrapper, Runner
-from ..api.utils.logging import get_logger
 from .models import ResearchContext
 
-logger = get_logger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @function_tool

@@ -11,10 +11,10 @@ from datetime import datetime
 from agents import Agent, AgentOutputSchema, RunContextWrapper, Runner, function_tool, ModelSettings
 from ..models import SupervisorDecision, ResearchContext, ResearchTask, ResearchStatus
 from ..tools import conduct_research, research_complete
+import structlog
 from ..config import DeepResearchConfig
-from ...api.utils.logging import get_logger
 
-logger = get_logger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ResearchSupervisor:

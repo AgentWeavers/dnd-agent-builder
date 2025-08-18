@@ -18,8 +18,10 @@ from agents.items import ItemHelpers
 from agents.run_context import RunContextWrapper
 from openai.types.responses.response_text_delta_event import ResponseTextDeltaEvent
 
-from .logging import get_logger
+import structlog
+
 from .session_utils import create_session_if_enabled, clear_session, get_session_info, get_session_messages
+
 
 
 class AgentRequest(BaseModel):
@@ -80,7 +82,7 @@ def create_agent_router(agent: Agent, prefix: str, agent_name: str) -> APIRouter
         APIRouter with standardized endpoints
     """
     # Create agent-specific logger for better log context
-    logger = get_logger(agent_name)
+    logger = structlog.get_logger(agent_name)
     
     router = APIRouter(prefix=prefix, tags=[agent_name])
     
@@ -514,7 +516,7 @@ def _extract_usage_info(result) -> Optional[dict[str, Any]]:
             }
     except Exception as e:
         # Create a utility logger for these helper functions
-        util_logger = get_logger("agent.utils")
+        util_logger = structlog.get_logger("agent.utils")
         util_logger.error(f"Error extracting usage info: {e}")
     return None
 
@@ -526,6 +528,6 @@ def _extract_response_id(result) -> Optional[str]:
             return result.raw_responses[-1].response_id
     except Exception as e:
         # Create a utility logger for these helper functions  
-        util_logger = get_logger("agent.utils")
+        util_logger = structlog.get_logger("agent.utils")
         util_logger.error(f"Error extracting response ID: {e}")
     return None
