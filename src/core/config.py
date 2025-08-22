@@ -1,5 +1,6 @@
 from plistlib import load
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import Optional
 import os
 from dotenv import load_dotenv
@@ -8,6 +9,12 @@ load_dotenv()
 
 class Settings(BaseSettings):
     """Application settings using pydantic-settings for validation"""
+    
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore"  # Ignore extra environment variables
+    )
     
     # Stack Auth Configuration (official naming from docs)
     stack_project_id: str = os.getenv("STACK_PROJECT_ID", "")
@@ -38,9 +45,5 @@ class Settings(BaseSettings):
     deep_research_search_api: str = os.getenv("DEEP_RESEARCH_SEARCH_API", "")
     log_level: str = os.getenv("LOG_LEVEL", "INFO").upper()
     log_format: str = os.getenv("LOG_FORMAT", "console")
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
 settings = Settings()
